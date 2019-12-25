@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html" charset="UTF-8"/>
+  <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, mininum=1.0, maxi-num=1.0, user-scalable=no"/>
+  <style>
+  body{
+    text-align:center;
+  }
+  </style>
+</head>
+<body  onselectstart="return false">
+
+<h2>打地鼠demo</h2>
+<canvas id="myCanvas" width="800" height="800" style="background:#ffffff;box-shadow:1px 2px 9px 2px #aaa">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+<script>
+
+var c=document.getElementById("myCanvas");
+var x2 = c.offsetLeft, y2 = c.offsetTop;
+var context=c.getContext("2d");
+
+var img=new Array();
+for(var i=0;i<11;i++){
+  img.push(new Image());
+}
+img[0].src = "images/help.png";
+img[1].src = "images/icon.png";
+img[2].src = "images/bg_canvas.png";
+img[3].src = "images/time_roller.png";
+img[4].src = "images/mouse.png";
+img[5].src = "images/hammer.png";
+img[6].src = "images/star.png";
+/*img[7].src = "images/m1.png";
+img[8].src = "images/m2.png";*/
+img[9].src = "images/hammer1.png";
+
+var audio = new Array();
+for(var i=0;i<6;i++){
+  audio.push(new Audio());
+}
+audio[0].src = "audio/main.ogg";
+audio[1].src = "audio/city.ogg";
+audio[2].src = "audio/finish.ogg";
+audio[3].src = "audio/fail.ogg";
+audio[4].src = "audio/1800.mp3";
+audio[5].src = "audio/0.wav";
+var audio1 =audio[0];
+var audio2 = audio[4];
+audio1.loop = "loop";
+var isplayed = false;
+
+audio1.oncanplay = function(){
+	audio1.play();
+}
+
+var cells = [], pos = [{x: 340,y: 273}, {x:155, y: 275}, {x: 540, y:279},
+                       {x: 128, y:366}, {x:342, y: 367}, {x: 542, y:366},
+                       {x: 120, y:463}, {x:342, y: 468}, {x: 565, y:470}];
+var rand = Math.floor(Math.random()*pos.length);
+var b0, b1;
+var time = 0, count = 0, limit = 1000;
+var end = false;
+var t;
+var state = 0, conNum = 0;
+var position = {x: 0, y: 0};
+var points = 0;
+var isClicked = false;
+var level = 1, speed =2, target = 100;
+
+img[0].onload = function(){
+  context.drawImage(img[0], (c.width-img[0].width)/2, 0);
+  b0 = new btn(693, img[0].height+70);
+  b1 = new btn(843, img[0].height+150);
+  b0.click = function(x, y){
+      if((c.width-200)/2 < x-x2 && (c.width-200)/2+180 > x-x2 && this.y1 < y-y2 && this.y1+70 > y-y2){
+        count=0;
+        end = false;
+        time = 0;
+        state = 0;
+        conNum = 0;
+        position = {x: 0, y: 0};
+        points = 0;
+        rand = Math.floor(Math.random()*pos.length);
+        cancelAnimationFrame(t);
+        c.addEventListener('click',hurtClick,false);
+        c.addEventListener('mousedown',function(){c.style.cursor = 'url('+img[9].src+'),auto';},false);
+        c.addEventListener('mouseup',function(){c.style.cursor = 'url('+img[5].src+'),auto';},false);
+        c.style.cursor = 'url('+img[5].src+'),auto';
+        audio1.pause();
+        audio1 = audio[1];
+        audio1.currentTime=0;
+        audio1.play();
+        t = window.requestAnimationFrame(animate);
+      }  
+  }
+
+  b1.click = function(x, y){
+      if((c.width-200)/2 < x-x2 && (c.width-200)/2+180 > x-x2 && this.y1 < y-y2 && this.y1+70 > y-y2){
+        window.close();
+      }
+  }
+}
+
+
+cells.push({x: 10, y: 250, w: 110, h: 90});
+
+var Sprite = function(name, painter){
+  if(name !=undefined)
+    this.name = name;
+  if(painter !=undefined)
+    this.painter = painter;
+
+  this.left = 0,
+  this.top = 0,
+  this.width = 112,
+  this.height = 80;
+
+  return this;
+}
+
+Sprite.prototype = {
+  paint: function (context){
+    if(this.painter !=undefined){
+      this.painter.paint(this, context);
+    }
+  }
+}
+
+var sp = new Sprite('cartoon', new bombPainter(cells));
+
+
+function bombPainter(cells){
+  this.cells = cells || [],
+  this.cellIndex = 0;
+}
+
+bombPainter.prototype.advance = function(){
+    if(this.cellIndex == this.cells.length-1){
+       this.cellIndex = 0;
+    }
+    else{
+       this.cellIndex++;
+    }
+}
+
+bombPainter.prototype.paint = function(sprite, context){
+    var cell = this.cells[this.cellIndex], x = cell.x;
+    if(state == 0){
+      position.x = pos[rand].x;
+      position.y = pos[rand].y;
+      state = 1;
+    }
+    else if(state == 1){
+      position.y = position.y-speed-level;
+      if(position.y <= pos[rand].y-95){
+        state =2;
+      }
+    }
+    else if(state == 2){
+      position.y = position.y+speed+level;
+      if(position.y >= pos[rand].y){
+        state = 0;
+        rand = Math.floor(Math.random()*pos.length);
+        isClicked = false;
+      }
+    }
+
+      if(audio2.currentTime > 0.5 ){
+      	audio2.pause();
+      	if(!isplayed){
+      	   audio2=audio[5];
+      	   audio2.currentTime=0;
+      	   audio2.play();
+      	   isplayed = true;
+      	}
+      }
+
+    if(state == 4){
+      context.drawImage(img[4], 415, cell.y, cell.w+10, cell.h, position.x, position.y+20, cell.w+10, cell.h);
+      /*context.drawImage(img[8], 130, 135, cell.w*1.5, cell.h*2, position.x, position.y, cell.w*1.35, cell.h*1.8);*/
+      context.drawImage(img[6], 0, 0, cell.w+10, cell.h-10, position.x+18, position.y-15, cell.w+10, cell.h-10);
+      
+      conNum++;
+      if(conNum > 80){
+        conNum = 0;
+        state =2;
+      }
+    
+    }
+    else{
+      context.drawImage(img[4], x, cell.y, cell.w, cell.h, position.x, position.y, cell.w, cell.h);
+      /*context.drawImage(img[7], 100, 100, cell.w*1.5, cell.h*2, position.x, position.y, cell.w, cell.h*4/3);*/
+    }
+    
+}
+
+function drawMice(){
+  context.save();
+    context.beginPath();
+    context.arc(pos[rand].x+68,pos[rand].y-102,100,0,2*Math.PI);
+    /*context.stroke();*/
+    context.clip();
+    sp.paint(context);
+    sp.painter.advance();
+    context.closePath();
+  context.restore();
+  if(state == 4 && conNum < 25){
+  	context.drawImage(img[1], 340, 10, 80, 50, position.x-100, position.y+20-conNum, 80, 50);
+  }
+}
+
+function animate(){
+  context.clearRect(0, 0, c.width, img[0].height+68);
+  context.drawImage(img[2], (c.width-img[2].width)/2, 0);
+  context.drawImage(img[3], 0, 0, img[3].width, 80, 20, 20, 220, 220*80/img[3].width);
+  context.drawImage(img[3], 0, 80, img[3].width, 60, 20, 23.4, 220, 220*60/img[3].width);
+  context.beginPath();
+    context.fillStyle="#0000ff";
+    context.font = '30px Verdana bold';
+    context.fillText('总分：', 600, 50);
+    context.fillStyle="red";
+    context.fillText(points , 600+context.measureText('总分：').width, 50);
+  context.closePath();
+
+    if(points <target+level*100){
+      if(count < limit-200){
+        count++;
+        var y =img[3].width*(1-count/limit);
+        context.drawImage(img[3], 0, 140, y, 60, 20, 31, 220*(1-count/limit), 220*(1-count/limit)*60/y); 
+
+        drawMice();
+      }
+      else{
+        if(!time){
+          time = new Date().getTime();
+          audio1.pause();
+          audio1 = audio[3];
+          audio1.currentTime=0;
+          audio1.play();
+          audio2.pause();
+          isplayed = true;
+        }
+        var nt = new Date().getTime();
+        var size = (nt-time);
+        context.beginPath();
+        context.drawImage(img[1], 14, 400, 400, 70, (c.width-size)/2, 300, size, size*7/40);
+        context.closePath();
+        if(size>400){
+          end=true;
+          c.removeEventListener('click',hurtClick,false);
+          c.style.cursor = 'default';
+        }
+      }
+    }
+    else{
+      if(!time){
+          time = new Date().getTime();
+          audio1.pause();
+	      audio1 = audio[2];
+	      audio1.currentTime=0;
+	      audio1.play();
+	      audio2.pause();
+	      isplayed = true;
+        }
+        var nt = new Date().getTime();
+        var size = (nt-time);
+        context.beginPath();
+        context.drawImage(img[1], 14, 470, 260, 70, (c.width-size)/2, 300, size, size*7/26);
+        context.closePath();
+        if(size>400){
+          end=true;
+          c.removeEventListener('click',hurtClick,false);
+          c.style.cursor = 'default';
+          level++;
+        }
+    }
+
+
+  if(!end){
+    t=window.requestAnimationFrame(animate);
+  }
+  
+}
+
+function btn(y0, y1){
+  this.y0 = y0;
+  this.y1 = y1;
+  context.beginPath();
+  context.drawImage(img[1], 14,this.y0, 180, 70, (c.width-200)/2, this.y1, 180, 70);
+  context.closePath();
+}
+
+btn.prototype.select = function(x, y){
+    context.clearRect((c.width-200)/2, this.y1, 180, 70);
+    context.beginPath();
+    context.drawImage(img[1], 14, this.y0, 180, 70, (c.width-200)/2, this.y1, 180, 70);
+    context.closePath();
+    if((c.width-200)/2 < x-x2 && (c.width-200)/2+180 > x-x2 && this.y1 < y-y2 && this.y1+70 > y-y2){
+      context.clearRect((c.width-200)/2, this.y1, 180, 70);
+      context.clearRect((c.width-200)/2, this.y1, 180, 70);
+      context.drawImage(img[1], 194, this.y0, 180, 70, (c.width-200)/2, this.y1, 180, 70);
+    }
+}
+
+var btnMove = function(e){
+  b0.select(e.pageX, e.pageY);
+  b1.select(e.pageX, e.pageY);
+}
+
+var btnClick = function(e){
+  b0.click(e.pageX, e.pageY);
+  b1.click(e.pageX, e.pageY);
+}
+
+var hurtClick = function(e){
+  if(!isClicked){
+    var x = e.pageX-x2, y = e.pageY-y2;
+    var cell = sp.painter.cells[sp.painter.cellIndex];
+
+    console.log(e.pageY-y2);
+
+    if(x>position.x && x<position.x+cell.w && y>position.y-img[5].height && Math.pow(pos[rand].x+68-x, 2) + Math.pow(pos[rand].y-102-y, 2)<10000 ){
+      state = 4;
+      points+=100;
+      isClicked = true;
+      audio2=audio[4]; 
+	  audio2.currentTime=0;
+	  audio2.play();
+	  isplayed = false;
+    }
+  }
+}
+
+c.addEventListener('mousemove',btnMove,false);
+c.addEventListener('click',btnClick,false);
+
+</script>
+
+</body>
+</html>
